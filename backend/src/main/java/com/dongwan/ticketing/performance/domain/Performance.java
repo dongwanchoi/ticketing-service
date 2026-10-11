@@ -38,6 +38,13 @@ public class Performance {
 		this.ageRating = ageRating;
 	}
 
+	public void update(String title, String description, Category category, AgeRating ageRating) {
+		this.title = title;
+		this.description = description;
+		this.category = category;
+		this.ageRating = ageRating;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -57,4 +64,5 @@ public class Performance {
 	public AgeRating getAgeRating() {
 		return ageRating;
 	}
+
 }

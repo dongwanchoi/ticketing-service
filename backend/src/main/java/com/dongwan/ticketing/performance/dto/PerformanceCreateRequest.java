@@ -6,8 +6,8 @@ import com.dongwan.ticketing.performance.domain.Category;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public record PerformanceCreateRequest(
-
+public record PerformanceCreateRequest (
+		
         @NotBlank
         String title,
 
