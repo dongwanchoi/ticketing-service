@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.dongwan.ticketing.performance.domain.AgeRating;
 import com.dongwan.ticketing.performance.domain.Category;
-import com.dongwan.ticketing.performance.dto.PerformanceCreateResponse;
+import com.dongwan.ticketing.performance.dto.PerformanceResponse;
 import com.dongwan.ticketing.performance.service.PerformanceService;
 
 @WebMvcTest(PerformanceController.class)
@@ -32,8 +32,8 @@ class PerformanceControllerTest {
     @DisplayName("정상적인 공연을 등록하면 201 Created를 반환한다")
     void createPerformance_whenRequestIsValid_returns201Created() throws Exception {
 
-        PerformanceCreateResponse response =
-                new PerformanceCreateResponse(
+    	PerformanceResponse response =
+                new PerformanceResponse(
                         1L,
                         "Test Concert",
                         "테스트 공연",
@@ -105,8 +105,8 @@ class PerformanceControllerTest {
     @DisplayName("공연 설명이 없어도 201 Created를 반환한다")
     void createPerformance_whenDescriptionIsMissing_returns201Created() throws Exception {
 
-        PerformanceCreateResponse response =
-                new PerformanceCreateResponse(
+    	PerformanceResponse response =
+                new PerformanceResponse(
                         1L,
                         "Description Optional Test",
                         null,
