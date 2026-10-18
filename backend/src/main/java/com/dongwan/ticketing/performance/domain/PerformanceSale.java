@@ -53,6 +53,20 @@ public class PerformanceSale {
         this.status = status;
     }
     
+    public boolean isOnSaleAt(LocalDateTime now) {
+
+    	if(this.status != SaleStatus.OPEN) {
+    		return false;
+    	}
+        if (this.salesStartAt == null && this.salesEndAt == null) {
+            return true;
+        }
+        
+        return !now.isBefore(this.salesStartAt)
+                && now.isBefore(this.salesEndAt);
+    }
+    
+    
     public Long getId() {
         return id;
     }
