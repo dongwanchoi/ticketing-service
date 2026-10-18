@@ -1,6 +1,8 @@
 package com.dongwan.ticketing.performance.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -70,6 +72,8 @@ public class PerformanceSaleService {
 				performanceSale.getSalesStartAt(), performanceSale.getSalesEndAt(), performanceSale.getStatus());
 	}
 	
+	
+	
 	private void validateSalePeriod(LocalDateTime start, LocalDateTime end) {
 		
 		if ((start == null) != (end == null)) {
@@ -79,5 +83,32 @@ public class PerformanceSaleService {
 		if (start != null && !start.isBefore(end)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "판매 종료일은 시작일보다 늦어야 합니다.");
 		}
+	}
+	@Transactional(readOnly = true)
+	public boolean isOnSale1(Long performanceId) {
+
+		PerformanceSale performanceSale =performanceSaleRepository.findByPerformance_Id(performanceId).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 공연의 판매 정책이 없습니다."));
+		performanceSale.isOnSaleAt(performanceSale.getSalesEndAt());
+		
+		return true;
+	}
+	
+	@Transactional(readOnly = true)
+	public boolean isOnSale(Long performanceId) {
+
+	    Optional<PerformanceSale> optionalSale = performanceSaleRepository.findByPerformance_Id(performanceId);
+
+	    // 1. 판매 정책이 없다면 예매 불가
+	    if (optionalSale.isEmpty()) {
+	        return false;
+	    }
+
+	    // 2. 판매 정책 조회
+	    PerformanceSale performanceSale = optionalSale.get();
+
+	    // 3. 한국 현재 시각을 기준으로 판매 가능 여부 판단
+	    LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+	    return performanceSale.isOnSaleAt(now);
 	}
 }
