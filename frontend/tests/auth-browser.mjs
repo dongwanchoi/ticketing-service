@@ -4,12 +4,30 @@ import assert from "node:assert/strict";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE_PATH
   ? pathToFileURL(`${process.env.PLAYWRIGHT_MODULE_PATH}/index.mjs`).href : "playwright");
 
+async function requirePerformanceLink(page) {
+  const detail = page.locator('a[href^="/performances/"]').first();
+  await detail.waitFor({ state: "visible" });
+  const href = await detail.getAttribute("href");
+  assert.match(href ?? "", /^\/performances\/[1-9]\d*\/?$/, "A valid public performance detail link is required");
+  assert.ok(Number.isSafeInteger(Number(href.split("/")[2])), "The performance ID must be a safe integer");
+  return { detail, href };
+}
+
+async function checkPerformanceDetail(page, base) {
+  const { detail, href } = await requirePerformanceLink(page);
+  await detail.click();
+  await page.waitForURL(new URL(href, base).href);
+  await page.getByRole("heading", { name: "공연 소개", exact: true }).waitFor({ state: "visible" });
+}
+
 async function main() {
   const live = process.env.AUTH_E2E_LIVE === "1";
   const readOnly = process.env.AUTH_E2E_READ_ONLY === "1";
   const browser = await chromium.launch({ headless: true,
     executablePath: process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" });
   const context = await browser.newContext();
+  context.setDefaultTimeout(15_000);
+  context.setDefaultNavigationTimeout(30_000);
   const page = await context.newPage();
   const failures = [];
   page.on("pageerror", error => failures.push(error.message));
@@ -19,11 +37,18 @@ async function main() {
   const password = "BrowserPassword123!";
   const mock = { registered: false, authenticated: false, rejectCsrf: false, offline: false };
   let signupPosts = 0;
+  let loginPosts = 0;
   page.on("request", request => {
     if (request.url() === `${backend}/api/v1/auth/signup` && request.method() === "POST") signupPosts++;
+    if (request.url() === `${backend}/api/v1/auth/login` && request.method() === "POST") loginPosts++;
   });
   if (!live && !readOnly) {
-    await context.route(`${backend}/api/v1/auth/**`, async route => {
+    // Catch auth requests on every origin so a mismatched frontend env cannot write to a real API.
+    await context.route(/\/api\/v1\/auth\//, async route => {
+      if (new URL(route.request().url()).origin !== new URL(backend).origin) {
+        failures.push("The frontend auth API origin does not match the configured mock backend");
+        return route.abort("blockedbyclient");
+      }
       if (mock.offline) return route.abort("failed");
       const request = route.request();
       const path = new URL(request.url()).pathname.split("/").pop();
@@ -83,11 +108,7 @@ async function main() {
       } finally { await other.close(); }
       await page.goto(base);
       await page.getByRole("heading", { name: "공연 둘러보기" }).waitFor();
-      const detail = page.locator('a[href^="/performances/"]').first();
-      if (await detail.count()) {
-        await detail.click();
-        await page.getByRole("heading", { name: "공연 소개" }).waitFor();
-      }
+      await checkPerformanceDetail(page, base);
       checked("real backend public performance list and detail remain available");
       assert.deepEqual(failures, []);
       process.stdout.write(JSON.stringify({ mode: "live-backend-no-user-db-writes", checks: checks.length }) + "\n");
@@ -125,9 +146,11 @@ async function main() {
 
     if (!live) {
       mock.rejectCsrf = true;
+      const loginPostsBeforeRejection = loginPosts;
       await page.getByLabel("비밀번호", { exact: true }).fill(password);
       await page.getByRole("button", { name: "로그인", exact: true }).click();
       await page.getByRole("alert").filter({ hasText: "세션이 변경" }).waitFor();
+      assert.equal(loginPosts - loginPostsBeforeRejection, 1, "CSRF rejection must not retry the login mutation");
       mock.rejectCsrf = false;
       checked("CSRF rejection is shown without automatic mutation retry");
     }
@@ -180,15 +203,14 @@ async function main() {
 
     await page.goto(base);
     await page.getByRole("heading", { name: "공연 둘러보기" }).waitFor();
+    await requirePerformanceLink(page);
     await page.getByRole("searchbox").fill("__no_such_performance__");
     await page.getByText("일치하는 공연이 없습니다", { exact: true }).waitFor();
+    assert.equal(await page.locator('a[href^="/performances/"]').count(), 0, "An unmatched search must not show performance links");
     await page.getByRole("button", { name: "전체 공연 보기" }).click();
-    const detail = page.locator('a[href^="/performances/"]').first();
-    if (await detail.count()) {
-      await detail.click();
-      await page.getByRole("heading", { name: "공연 소개" }).waitFor();
-      checked("public performance detail remains accessible");
-    }
+    assert.equal(await page.getByRole("searchbox").inputValue(), "", "Show all performances must clear the search");
+    await checkPerformanceDetail(page, base);
+    checked("public performance detail remains accessible");
     checked("public list and search remain usable");
     if (!live) {
       mock.offline = true;
