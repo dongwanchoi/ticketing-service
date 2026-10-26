@@ -7,6 +7,7 @@ const performances = [
   { id: 2, title: "테스트 뮤지컬", description: "검색과 상세 이동을 확인합니다.", category: "MUSICAL", ageRating: "ALL" },
 ];
 let mode = "normal";
+let sessionMode = "normal";
 const requests = [];
 const modes = new Set(["normal", "empty", "error", "slow"]);
 
@@ -36,6 +37,22 @@ const server = http.createServer(async (request, response) => {
       return send(200, { mode });
     }
     if (url.pathname === "/__test/requests" && request.method === "GET") return send(200, requests);
+    if (url.pathname === "/__test/sessions") {
+      let nextMode = url.searchParams.get("mode");
+      if (request.method === "POST") {
+        let body = "";
+        for await (const chunk of request) {
+          body += chunk;
+          if (body.length > 1024) return send(413, { error: "Control payload too large" });
+        }
+        nextMode = JSON.parse(body).mode;
+      }
+      if (nextMode !== null) {
+        if (!modes.has(nextMode)) return send(400, { error: "Unknown fixture mode" });
+        sessionMode = nextMode;
+      }
+      return send(200, { mode: sessionMode });
+    }
     requests.push({ method: request.method, path: url.pathname });
     if (request.method !== "GET") return send(403, { error: "This fixture never accepts application mutations" });
     if (url.pathname === "/api/v1/auth/me") return send(401, {});
@@ -44,6 +61,18 @@ const server = http.createServer(async (request, response) => {
       if (requestMode === "slow") await new Promise(resolve => setTimeout(resolve, 1500));
       if (requestMode === "error") return send(503, { error: "Intentional test failure" });
       return send(200, requestMode === "empty" ? [] : performances);
+    }
+    const sessions = url.pathname.match(/^\/api\/v1\/performances\/([1-9]\d*)\/sessions$/);
+    if (sessions) {
+      if (!performances.some(item => item.id === Number(sessions[1]))) return send(404, {});
+      const requestMode = sessionMode;
+      if (requestMode === "slow") await new Promise(resolve => setTimeout(resolve, 1500));
+      if (requestMode === "error") return send(503, {});
+      return send(200, requestMode === "empty" ? [] : [
+        { sessionId: 101, startsAt: "2027-01-16T14:00:00", minPrice: 50000, maxPrice: 90000, remainingSeatCount: 12 },
+        { sessionId: 102, startsAt: "2027-01-16T19:00:00", minPrice: 70000, maxPrice: 70000, remainingSeatCount: 3 },
+        { sessionId: 103, startsAt: "2027-01-17T14:00:00", minPrice: null, maxPrice: null, remainingSeatCount: 0 },
+      ]);
     }
     const availability = url.pathname.match(/^\/api\/v1\/performances\/([1-9]\d*)\/sale-availability$/);
     if (availability) return send(200, { performanceId: Number(availability[1]), onSale: true });
