@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup", "/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/performances",
+                                "/api/v1/performances/*/sessions",
                                 "/api/v1/performances/*/sale-availability").permitAll()
                         // Ownership and privileged provisioning are not implemented yet.
                         .anyRequest().denyAll())
