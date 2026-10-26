@@ -1,6 +1,7 @@
 // Real public performance API/browser coverage only. Auth is mocked anonymous; no mutation is permitted.
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
+import { performanceLinks, assertCountEventually } from "./browser-assertions.mjs";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE_PATH
   ? pathToFileURL(`${process.env.PLAYWRIGHT_MODULE_PATH}/index.mjs`).href : "playwright");
 
@@ -50,9 +51,9 @@ async function main() {
   try {
     await page.goto(base);
     await heading("공연 둘러보기").waitFor();
-    const links = page.locator('a[href^="/performances/"]');
+    const links = performanceLinks(page);
     await links.first().waitFor({ state: "visible" });
-    assert.equal(await links.count(), performances.length, "The browser must render the real API list");
+    await assertCountEventually(links, performances.length, "The browser must render the real API list");
     const first = links.first();
     const href = await first.getAttribute("href");
     assert.match(href ?? "", /^\/performances\/[1-9]\d*\/?$/);
@@ -70,11 +71,11 @@ async function main() {
     while (performances.some(item => `${item.title} ${item.description ?? ""}`.toLowerCase().includes(unmatched))) unmatched += "_";
     await page.getByRole("searchbox").fill(unmatched);
     await page.getByText("일치하는 공연이 없습니다", { exact: true }).waitFor();
-    assert.equal(await links.count(), 0);
+    await assertCountEventually(links, 0, "An unmatched search must not show any performance links");
     await page.getByRole("button", { name: "전체 공연 보기", exact: true }).click();
     assert.equal(await page.getByRole("searchbox").inputValue(), "");
     await links.first().waitFor({ state: "visible" });
-    assert.equal(await links.count(), performances.length);
+    await assertCountEventually(links, performances.length, "Reset must restore every real performance link");
     checked("real public list search and reset preserve available performances");
 
     let missingId = 1;

@@ -1,11 +1,12 @@
 // No project dependency required: set PLAYWRIGHT_MODULE_PATH to a temporary Playwright install.
 import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
+import { performanceLinks, assertCountEventually } from "./browser-assertions.mjs";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE_PATH
   ? pathToFileURL(`${process.env.PLAYWRIGHT_MODULE_PATH}/index.mjs`).href : "playwright");
 
 async function requirePerformanceLink(page) {
-  const detail = page.locator('a[href^="/performances/"]').first();
+  const detail = performanceLinks(page).first();
   await detail.waitFor({ state: "visible" });
   const href = await detail.getAttribute("href");
   assert.match(href ?? "", /^\/performances\/[1-9]\d*\/?$/, "A valid public performance detail link is required");
@@ -206,7 +207,7 @@ async function main() {
     await requirePerformanceLink(page);
     await page.getByRole("searchbox").fill("__no_such_performance__");
     await page.getByText("일치하는 공연이 없습니다", { exact: true }).waitFor();
-    assert.equal(await page.locator('a[href^="/performances/"]').count(), 0, "An unmatched search must not show performance links");
+    await assertCountEventually(performanceLinks(page), 0, "An unmatched search must not show performance links");
     await page.getByRole("button", { name: "전체 공연 보기" }).click();
     assert.equal(await page.getByRole("searchbox").inputValue(), "", "Show all performances must clear the search");
     await checkPerformanceDetail(page, base);

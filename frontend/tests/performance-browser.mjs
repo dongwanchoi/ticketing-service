@@ -1,6 +1,7 @@
 // Runs against the isolated performance-fixture.mjs backend and a separately started frontend.
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
+import { performanceLinks, assertCountEventually } from "./browser-assertions.mjs";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE_PATH
   ? pathToFileURL(`${process.env.PLAYWRIGHT_MODULE_PATH}/index.mjs`).href : "playwright");
 
@@ -29,16 +30,16 @@ async function main() {
     await setMode("normal");
     await page.goto(base);
     await heading("공연 둘러보기").waitFor();
-    const links = page.locator('a[href^="/performances/"]');
-    assert.equal(await links.count(), 2, "Both fixture performances must be rendered");
+    const links = performanceLinks(page);
+    await assertCountEventually(links, 2, "Both fixture performances must be rendered");
     await page.getByRole("searchbox").fill("__no_such_performance__");
     await page.getByText("일치하는 공연이 없습니다", { exact: true }).waitFor();
-    assert.equal(await links.count(), 0);
+    await assertCountEventually(links, 0, "An unmatched search must not show any performance links");
     await page.getByRole("button", { name: "전체 공연 보기", exact: true }).click();
     assert.equal(await page.getByRole("searchbox").inputValue(), "");
     await links.first().waitFor();
-    assert.equal(await links.count(), 2);
-    await page.locator('a[href="/performances/1"]').click();
+    await assertCountEventually(links, 2, "Reset must restore both fixture performance links");
+    await links.filter({ has: page.getByRole("heading", { name: "테스트 콘서트", exact: true }) }).click();
     await page.waitForURL(`${base}/performances/1`);
     await heading("테스트 콘서트").waitFor();
     await heading("공연 소개").waitFor();
@@ -55,7 +56,7 @@ async function main() {
     await setMode("empty");
     await page.goto(base);
     await page.getByText("등록된 공연이 아직 없습니다", { exact: true }).waitFor();
-    assert.equal(await links.count(), 0);
+    await assertCountEventually(links, 0, "An empty API list must not show any performance links");
     assert.equal(await page.getByText("일치하는 공연이 없습니다", { exact: true }).count(), 0);
     await setMode("normal");
     await page.getByRole("button", { name: "공연 목록 새로고침", exact: true }).click();
