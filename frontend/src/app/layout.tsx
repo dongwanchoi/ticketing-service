@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/features/auth/components/AuthProvider";
+import SiteHeader from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -8,8 +10,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="ko">
+      <body><AuthProvider><SiteHeader />{children}</AuthProvider></body>
     </html>
   );
 }

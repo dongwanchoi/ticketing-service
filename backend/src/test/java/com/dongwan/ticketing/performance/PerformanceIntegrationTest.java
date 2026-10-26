@@ -25,7 +25,7 @@ import com.dongwan.ticketing.performance.repository.PerformanceRepository;
 
 @Testcontainers
 @SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create")
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false) // Business contract only; production endpoints remain denied.
 class PerformanceIntegrationTest {
 
 	@Container

@@ -12,6 +12,7 @@ public class WebConfig implements WebMvcConfigurer { //Spring MVC 기본 설정 
 		registry.addMapping("/api/**") //api로 시작하는 모든 API 허용
 				.allowedOrigins("http://localhost:3000")//CORS 허용 범위 지정
 				.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-		  		.allowedHeaders("*");
+				.allowedHeaders("Content-Type", "X-CSRF-TOKEN")
+				.allowCredentials(true);
 	}
 }
