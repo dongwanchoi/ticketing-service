@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Performance } from "@/features/performance/types";
+import PerformanceSessions from "@/features/performance/components/PerformanceSessions";
 import {
   getCategoryLabel,
   getAgeRatingLabel,
@@ -84,24 +85,12 @@ export default async function PerformanceDetailPage({ params }: DetailProps) {
             </section>
 
             <section className="mt-5 rounded-[20px] border border-[#ebe8e3] bg-white p-6 sm:p-8">
-              <h2 className="text-lg font-bold">관람 일정과 공연장</h2>
-              <p className="mt-3 break-keep text-sm leading-7 text-[#817b85]">공연 회차·공연장 데이터를 조회하는 구매자용 API가 연결되면 정확한 관람일과 장소를 표시합니다.</p>
+              <h2 className="text-lg font-bold">관람 일정 안내</h2>
+              <p className="mt-3 break-keep text-sm leading-7 text-[#817b85]">관람 회차에서 일정·가격대·잔여 좌석 수를 확인하세요. 일정은 한국 시간 기준입니다. 공연장과 개별 좌석 정보는 아직 제공되지 않습니다.</p>
             </section>
           </div>
 
-          <aside className="h-fit rounded-[20px] border border-[#e8e2ef] bg-white p-6 shadow-[0_12px_34px_rgba(48,32,80,0.06)] lg:sticky lg:top-8">
-            <p className="text-[11px] font-bold tracking-[0.12em] text-[#7355c8]">BOOK YOUR MOMENT</p>
-            <h2 className="mt-3 text-xl font-extrabold">티켓 예매</h2>
-            <p className="mt-3 break-keep text-sm leading-7 text-[#78717e]">공연 날짜와 회차를 선택하는 기능은 다음 개발 단계에서 연결됩니다.</p>
-            <div className="mt-5 space-y-3 rounded-xl bg-[#f9f8fb] p-4 text-sm text-[#756e79]">
-              <div className="flex justify-between"><span>관람 회차</span><span className="font-medium text-[#97909c]">미선택</span></div>
-              <div className="flex justify-between"><span>선택 좌석</span><span className="font-medium text-[#97909c]">미선택</span></div>
-            </div>
-            <button disabled type="button" className="mt-5 h-12 w-full cursor-not-allowed rounded-[13px] bg-[#d1cbdc] font-semibold text-white" title="회차 선택 및 로그인 기능 구현 이후 활성화됩니다">
-              예매 기능 준비 중
-            </button>
-            <p className="mt-3 text-center text-xs leading-5 text-[#9a949f]">판매 가능 상태만으로 좌석 예약이 확정되지는 않습니다.</p>
-          </aside>
+          <PerformanceSessions key={performanceId} performanceId={performanceId} />
         </div>
       </div>
     </main>
