@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Performance } from "../types";
 import { getCategoryLabel } from "../presentation";
 import PerformanceCard from "./PerformanceCard";
@@ -10,6 +11,7 @@ type PerformanceListProps = {
 };
 
 export default function PerformanceList({ performances }: PerformanceListProps) {
+  const router = useRouter();
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("ALL");
 
@@ -90,10 +92,14 @@ export default function PerformanceList({ performances }: PerformanceListProps) 
         </div>
 
         {filteredPerformances.length === 0 ? (
-          <div className="rounded-[18px] border border-dashed border-[#d8d3df] bg-white px-5 py-16 text-center">
-            <p className="text-base font-semibold text-[#312b3b]">일치하는 공연이 없습니다</p>
-            <p className="mt-2 text-sm text-[#8a8492]">검색어나 카테고리를 변경해 보세요.</p>
-            <button type="button" onClick={() => { setKeyword(""); setCategory("ALL"); }} className="mt-5 rounded-full bg-[#6a49c8] px-5 py-2.5 text-sm font-semibold text-white">전체 공연 보기</button>
+          <div role="status" className="rounded-[18px] border border-dashed border-[#d8d3df] bg-white px-5 py-16 text-center">
+            <p className="text-base font-semibold text-[#312b3b]">{performances.length === 0 ? "등록된 공연이 아직 없습니다" : "일치하는 공연이 없습니다"}</p>
+            <p className="mt-2 text-sm text-[#8a8492]">{performances.length === 0 ? "새로운 공연이 등록되면 이곳에서 확인할 수 있습니다. 잠시 후 다시 방문해 주세요." : "검색어나 카테고리를 변경해 보세요."}</p>
+            {performances.length === 0 ? (
+              <button type="button" onClick={() => router.refresh()} className="mt-5 inline-flex rounded-full bg-[#6a49c8] px-5 py-2.5 text-sm font-semibold text-white">공연 목록 새로고침</button>
+            ) : (
+              <button type="button" onClick={() => { setKeyword(""); setCategory("ALL"); }} className="mt-5 rounded-full bg-[#6a49c8] px-5 py-2.5 text-sm font-semibold text-white">전체 공연 보기</button>
+            )}
           </div>
         ) : (
           <>
